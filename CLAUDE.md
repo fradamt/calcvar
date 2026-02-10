@@ -107,7 +107,7 @@ Thread assignment prefers specific subfields over the `classical_calcvar` catch-
 ## Known Issues
 
 - **OpenAlex metadata quality:** Author names on books can be wrong (e.g., Federer's "Geometric Measure Theory" lists incorrect authors). The SS enrichment only fetches citation counts, not author metadata, so OpenAlex errors persist. A future improvement would be to also pull SS author data to cross-check.
-- **Citation expansion relevance:** Papers pulled in via citation expansion (cited by >=3 corpus papers) are now filtered for calcvar relevance (must mention calcvar or match a domain term), but some borderline papers may still slip through.
+- **Citation expansion relevance:** Papers pulled in via citation expansion (cited by >=3 corpus papers) are now filtered: must mention calcvar explicitly OR match >=2 domain terms. Single domain-term matches (e.g., just "dynamic programming") are excluded to avoid loosely related papers.
 - **Influence score formula:** 40% citations (log-scaled), 30% relevance score, 20% in-corpus citations, 10% recency. The relevance score from OpenAlex keyword search may not be available for citation-expanded papers.
 
 ## Expanding Coverage
@@ -118,9 +118,42 @@ Thread assignment prefers specific subfields over the `classical_calcvar` catch-
 - **Add subfields:** Add to `DOMAIN_TERMS` in build script, `THREAD_META` in analyze.py, and `THREAD_COLORS`/`THREAD_ORDER`/`THREAD_NAMES` in constants.js
 - **`expansion_data.py`**: Contains additional author/keyword/term recommendations from a research agent, not yet incorporated
 
+## Interaction Model
+
+### Click Behavior
+
+All views use a consistent single-click / double-click pattern:
+
+| Element | Single Click | Double Click |
+|---------|-------------|--------------|
+| Timeline paper node | Pin (highlight + first-degree citation edges) | Open detail panel |
+| Sidebar paper item | Pin in current view | Open detail panel |
+| Sidebar author item | Toggle author filter | Filter + open detail panel |
+| Sidebar thread chip | Toggle thread filter | Filter + open detail panel |
+| Search result (paper) | Open detail panel + pin in view | — |
+| Search result (author) | Open detail panel + highlight author's papers | — |
+| Empty canvas area | Clear pin/selection | Reset zoom |
+
+### Pin vs Select vs Filter
+
+- **Pin** (`pinEntity`): Highlights a paper and its first-degree citation edges in the timeline. Dims everything else. Shows overlay labels on connected papers. Does NOT open the detail panel. Cleared by clicking empty space or pressing Escape.
+- **Select** (`selectEntity`): Pins the entity AND opens the detail panel. Used by double-click and search result clicks.
+- **Filter** (`setFilters`): Sets persistent filters (thread, author, tag, influence threshold). Shows matching papers at normal opacity, dims non-matching. Shown as breadcrumbs. Cleared individually or via Escape/reset.
+
+### Cross-View Highlighting
+
+When an author is pinned/selected (from search or sidebar), all their papers are highlighted in both the timeline and network views:
+- **Timeline:** `buildPinnedConnections` finds author's papers from `core.papers`, highlights them at 0.7 opacity with overlay labels on top papers.
+- **Network:** Connected set is built by looking up author names from `core.papers` (since `graph.json` nodes don't carry author arrays).
+
+### Pinned Edge Visibility
+
+When a paper is pinned, only **first-degree edges** (direct citations to/from the pinned paper) are shown. All other edges are fully hidden (opacity 0) to avoid visual clutter from dense second-degree connections.
+
 ## Key Design Decisions
 
 - **Canvas over SVG:** Performance with thousands of papers. All three views use HTML5 Canvas.
+- **Event-driven state:** `state.js` is the single source of truth. Actions (`pinEntity`, `selectEntity`, `setFilters`) mutate state and emit events (`pin:changed`, `selection:changed`, `filters:changed`). Views subscribe to events and re-render. This allows cross-module communication (e.g., sidebar pin → timeline highlight) without direct imports between view modules.
 - **OpenAlex primary, SS secondary:** OpenAlex has broader coverage (especially older works/books) and no rate limits. SS has better metadata quality but strict limits. We use OA for discovery and SS for citation count enrichment.
 - **Influence-only visibility:** Paper visibility controlled solely by the influence slider — no layer modes. The influence score balances citation impact, relevance, in-corpus citations, and recency.
-- **Citation expansion with relevance gate:** Papers cited by >=3 corpus papers are auto-included only if they pass a relevance check (must mention calcvar terms or match at least one domain term).
+- **Citation expansion with relevance gate:** Papers cited by >=3 corpus papers are auto-included only if they pass a relevance check (must mention calcvar terms or match >=2 domain terms). The threshold was raised from 1 to 2 domain terms to filter out loosely related books (e.g., Bellman's generic "Dynamic Programming").
