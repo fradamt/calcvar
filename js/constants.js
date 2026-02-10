@@ -9,11 +9,13 @@ export const THREAD_COLORS = {
   convexity: '#4361ee',
   gamma_convergence: '#7209b7',
   optimal_transport: '#06b6d4',
+  free_discontinuity: '#e07c3e',
 };
 
 export const THREAD_ORDER = [
   'classical_calcvar', 'direct_methods', 'regularity', 'geometric',
   'optimal_control', 'convexity', 'gamma_convergence', 'optimal_transport',
+  'free_discontinuity',
 ];
 
 export const THREAD_NAMES = {
@@ -25,6 +27,7 @@ export const THREAD_NAMES = {
   convexity: 'Convexity & Relaxation',
   gamma_convergence: '\u0393-Convergence',
   optimal_transport: 'Optimal Transport',
+  free_discontinuity: 'Free Discontinuity',
 };
 
 export const AUTHOR_COLORS = [
