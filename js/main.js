@@ -2,7 +2,7 @@
 
 import { THREAD_COLORS, THREAD_ORDER } from './constants.js';
 import {
-  getState, on, setView, setFilters, setContentToggle, setHelp,
+  getState, on, setView, setFilters, setHelp,
   setSidebarWidth, setSidebarHidden, resetAll,
   selectEntity, pinEntity, setDetailOpen, setLineage,
 } from './state.js';
@@ -68,27 +68,6 @@ on('view:changed', async ({ current }) => {
     coauthorModule.onActivate?.();
   }
 });
-
-
-// --- Content toggles ---
-function toggleContent(type) {
-  if (type === 'papers') {
-    const st = getState();
-    setContentToggle('showPapers', !st.showPapers);
-  }
-  updateContentToggleUI();
-}
-
-function updateContentToggleUI() {
-  const st = getState();
-  const paperBtn = document.getElementById('toggle-papers');
-  if (paperBtn) {
-    paperBtn.classList.toggle('active', st.showPapers);
-  }
-}
-
-on('content:changed', updateContentToggleUI);
-on('filters:changed', updateContentToggleUI);
 
 
 // --- Keyboard shortcuts ---
@@ -223,7 +202,6 @@ function applyHash() {
   if (params.paper) selectEntity({ type: 'paper', id: params.paper });
   if (params.inf) setFilters({ minInfluence: Number(params.inf) });
   if (params.papers) {
-    setContentToggle('showPapers', params.papers !== 'off');
   }
   if (params.tag) setFilters({ activeTag: params.tag });
 }
@@ -240,7 +218,6 @@ export function updateHash() {
     parts.push(type + '=' + encodeURIComponent(id));
   }
   if (st.minInfluence > 0) parts.push('inf=' + st.minInfluence.toFixed(4));
-  if (!st.showPapers) parts.push('papers=off');
 
   const hash = parts.length ? '#' + parts.join('&') : '';
   if (window.location.hash !== hash) {
@@ -270,7 +247,6 @@ export function showToast(msg) {
 
 // --- Expose toggle functions for inline HTML handlers ---
 window.showView = switchView;
-window.toggleContent = toggleContent;
 window.toggleHelp = () => setHelp(!getState().helpOpen);
 window.toggleSidebarWidth = () => setSidebarWidth(!getState().sidebarWide);
 window.toggleSidebarHidden = () => setSidebarHidden(!getState().sidebarHidden);
