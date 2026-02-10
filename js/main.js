@@ -274,9 +274,6 @@ async function init() {
   // Apply hash state after everything is ready
   applyHash();
 
-  // Update content toggle UI
-  updateContentToggleUI();
-
   // Position sidebar buttons on initial load
   positionSidebarButtons();
 }
