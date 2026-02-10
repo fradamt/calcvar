@@ -1292,7 +1292,13 @@ def build_database(min_score, min_year, query_pages, author_pages, per_page):
                         # Check if already in accepted by ID
                         if any(a["id"] == paper["id"] for a in accepted):
                             continue
-                        # Give it a relevance boost proportional to citation count
+                        # Relevance gate: must have some calcvar signal
+                        score, reasons, tags, matched_domains = score_paper(
+                            paper, known_researchers, min_year,
+                        )
+                        has_calcvar = any("mentions_calcvar" in r for r in reasons)
+                        if not has_calcvar and matched_domains == 0:
+                            continue  # skip unrelated papers
                         cite_count = external_ref_counts.get(
                             short_openalex_id(work.get("id")), 0
                         )
@@ -1302,14 +1308,13 @@ def build_database(min_score, min_year, query_pages, author_pages, per_page):
                         )
                         paper["relevance_reasons"] = [
                             f"citation_expansion(cited_by={cite_count})"
-                        ]
+                        ] + reasons
                         paper["tags"] = sorted(
-                            set(paper.get("tags") or []) | {"citation-expanded"}
+                            set(tags) | {"citation-expanded"}
                         )
                         paper["matched_queries"] = []
                         paper["source_types"] = ["citation_expansion"]
                         paper["source"] = "citation_expansion"
-                        # Strip large text fields (same as scored papers)
                         paper.pop("abstract_text", None)
                         paper.pop("concept_terms", None)
                         paper.pop("keyword_terms", None)
