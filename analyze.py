@@ -58,6 +58,10 @@ THREAD_META = {
         "name": "Optimal Transport",
         "description": "Monge-Kantorovich problem, Wasserstein distances, Brenier's theorem, displacement convexity, gradient flows.",
     },
+    "free_discontinuity": {
+        "name": "Free Discontinuity",
+        "description": "Mumford-Shah functional, SBV functions, phase field models, Ginzburg-Landau vortices, Allen-Cahn and Cahn-Hilliard equations, sharp and diffuse interface limits.",
+    },
 }
 
 THREAD_ORDER = list(THREAD_META.keys())

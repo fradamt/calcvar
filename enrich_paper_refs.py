@@ -59,6 +59,7 @@ def http_get_json(path, params=None, retries=5, pause=0.15):
                     "--connect-timeout", "10",
                     "--max-time", "30",
                     "-A", USER_AGENT,
+                    "--resolve", "api.openalex.org:443:104.20.26.229",
                     url,
                 ],
                 check=True,
