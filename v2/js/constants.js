@@ -36,13 +36,6 @@ export const AUTHOR_COLORS = [
   '#606c38', '#9d4edd', '#264653', '#a8dadc', '#b5838d',
 ];
 
-// Paper visibility limits per layer mode
-export const PAPER_LAYER_LIMITS = {
-  focus: 200,
-  context: 400,
-  broad: 800,
-};
-
 // Default influence slider threshold (0 = show all)
 export const DEFAULT_MIN_INFLUENCE = 0;
 

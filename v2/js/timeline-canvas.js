@@ -1,7 +1,7 @@
 // timeline-canvas.js — Canvas swim-lane timeline view for papers
 // Papers plotted on X=time, Y=subfield swim lanes. Sized by sqrt(influence).
 
-import { THREAD_COLORS, THREAD_ORDER, THREAD_NAMES, TIMELINE_ZOOM_EXTENT, PAPER_LAYER_LIMITS } from './constants.js';
+import { THREAD_COLORS, THREAD_ORDER, THREAD_NAMES, TIMELINE_ZOOM_EXTENT } from './constants.js';
 import { getState, on, selectEntity, pinEntity, hoverEntity, setFilters } from './state.js';
 import { getCore, getCoreIndexes } from './data.js';
 import { setupCanvas, drawDiamond, drawArrow, hexWithAlpha } from './canvas-utils.js';
@@ -700,19 +700,14 @@ function filterTimeline() {
 
   const hasActiveFilter = st.activeThread || st.activeAuthor || st.activeTag;
   const showPapers = st.showPapers;
-  const mode = st.paperLayerMode || 'focus';
-  const limit = PAPER_LAYER_LIMITS[mode] || 200;
 
-  // Two-phase: filter then top-N selection
-  const passing = [];
+  const visibleIds = new Set();
   for (const e of paperEntities) {
     if (!showPapers) { e.targetOpacity = 0; continue; }
     if (paperMatchesFilter(e.data, st)) {
-      passing.push(e);
+      visibleIds.add(e.data.id);
     }
   }
-  passing.sort((a, b) => (b.inf || 0) - (a.inf || 0));
-  const visibleIds = new Set(passing.slice(0, limit).map(e => e.data.id));
 
   for (const e of paperEntities) {
     if (!showPapers) { e.targetOpacity = 0; continue; }
