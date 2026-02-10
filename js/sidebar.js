@@ -36,16 +36,10 @@ export function init(core) {
     if (slider) slider.value = defaultSliderPct;
     if (label) label.textContent = sliderLabel(defaultSliderPct);
   });
-  on('content:changed', ({ key }) => {
-    if (key === 'showPapers') {
-      const st = getState();
-      if (st.showPapers) {
-        loadPapers().then(() => {
-          renderPaperSidebarList();
-          populatePaperTagDropdown();
-        });
-      }
-    }
+  // Load papers eagerly for sidebar list
+  loadPapers().then(() => {
+    renderPaperSidebarList();
+    populatePaperTagDropdown();
   });
 }
 
