@@ -764,8 +764,7 @@ function applyPinnedHighlight() {
 
   for (const edge of edgeData) {
     const direct = (pinned.type === 'paper') && (edge.source === pinned.id || edge.target === pinned.id);
-    const touching = conns.connectedPapers.has(edge.source) && conns.connectedPapers.has(edge.target);
-    edge.opacity = direct ? 0.5 : touching ? 0.08 : 0.01;
+    edge.opacity = direct ? 0.5 : 0.01;
     edge.highlighted = direct;
   }
 
