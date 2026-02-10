@@ -31,7 +31,6 @@ const state = {
 
   // Content toggles
   showPapers: true,
-  paperLayerMode: 'focus',
 
   // Paper filters
   paperFilterYearMin: null,
@@ -161,7 +160,6 @@ export function resetAll() {
   state.activeTag = null;
   state.minInfluence = 0;
   state.showPapers = true;
-  state.paperLayerMode = 'focus';
   state.lineageActive = false;
   state.lineageSet = new Set();
   state.lineageEdgeSet = new Set();

@@ -3,7 +3,7 @@
 // citation edges, force-directed layout, viewport culling, quadtree hit-testing,
 // and Shift+click BFS path finding.
 
-import { THREAD_COLORS, NETWORK_ZOOM_EXTENT, PAPER_LAYER_LIMITS } from './constants.js';
+import { THREAD_COLORS, NETWORK_ZOOM_EXTENT } from './constants.js';
 import { getState, on, selectEntity, pinEntity, hoverEntity, setPath } from './state.js';
 import { getCore, getGraph, getGraphIndexes, loadGraph } from './data.js';
 import {

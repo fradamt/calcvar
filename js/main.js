@@ -72,21 +72,9 @@ on('view:changed', async ({ current }) => {
 
 // --- Content toggles ---
 function toggleContent(type) {
-  const st = getState();
   if (type === 'papers') {
-    if (!st.showPapers) {
-      setContentToggle('showPapers', true);
-    } else {
-      // Cycle: focus -> context -> broad -> off
-      const modes = ['focus', 'context', 'broad'];
-      const idx = modes.indexOf(st.paperLayerMode);
-      if (idx < modes.length - 1) {
-        setFilters({ paperLayerMode: modes[idx + 1] });
-      } else {
-        setContentToggle('showPapers', false);
-        setFilters({ paperLayerMode: 'focus' });
-      }
-    }
+    const st = getState();
+    setContentToggle('showPapers', !st.showPapers);
   }
   updateContentToggleUI();
 }
@@ -96,8 +84,6 @@ function updateContentToggleUI() {
   const paperBtn = document.getElementById('toggle-papers');
   if (paperBtn) {
     paperBtn.classList.toggle('active', st.showPapers);
-    paperBtn.classList.remove('mode-focus', 'mode-context', 'mode-broad');
-    if (st.showPapers) paperBtn.classList.add('mode-' + st.paperLayerMode);
   }
 }
 
@@ -237,10 +223,7 @@ function applyHash() {
   if (params.paper) selectEntity({ type: 'paper', id: params.paper });
   if (params.inf) setFilters({ minInfluence: Number(params.inf) });
   if (params.papers) {
-    setContentToggle('showPapers', true);
-    if (['focus', 'context', 'broad'].includes(params.papers)) {
-      setFilters({ paperLayerMode: params.papers });
-    }
+    setContentToggle('showPapers', params.papers !== 'off');
   }
   if (params.tag) setFilters({ activeTag: params.tag });
 }
@@ -257,7 +240,7 @@ export function updateHash() {
     parts.push(type + '=' + encodeURIComponent(id));
   }
   if (st.minInfluence > 0) parts.push('inf=' + st.minInfluence.toFixed(4));
-  if (st.showPapers) parts.push('papers=' + st.paperLayerMode);
+  if (!st.showPapers) parts.push('papers=off');
 
   const hash = parts.length ? '#' + parts.join('&') : '';
   if (window.location.hash !== hash) {

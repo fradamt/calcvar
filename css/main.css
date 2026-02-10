@@ -385,9 +385,7 @@ header .stats span { white-space: nowrap; }
 .content-toggle:hover { background: #2a2a3e; }
 .content-toggle.active { background: #2a3a2a; border-color: #4a6a4a; color: #88cc88; }
 .content-toggle.papers-toggle.active { background: #1f2f45; border-color: #4b6f9d; color: #9cc8ff; }
-.content-toggle.papers-toggle.mode-focus { border-color: #4b6f9d; color: #9cc8ff; }
-.content-toggle.papers-toggle.mode-context { border-color: #4b7d5a; color: #9cddb4; }
-.content-toggle.papers-toggle.mode-broad { border-color: #7d6a4b; color: #e3c58f; }
+
 
 /* --- Responsive --- */
 @media (max-width: 1450px) {
