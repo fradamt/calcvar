@@ -406,11 +406,25 @@ function draw() {
   for (const n of visibleNodes) visibleIdSet.add(String(n.id));
 
   // Determine connected set for hover/selection/pin highlighting
+  const pinnedType = st.pinnedEntity?.type || st.selectedEntity?.type;
   const focusId = hoveredNode ? String(hoveredNode.id)
     : (selectedId ? String(selectedId)
     : (pinnedId ? String(pinnedId) : null));
   let connectedSet = null;
-  if (focusId) {
+  if (focusId && pinnedType === 'author' && !hoveredNode) {
+    // Author: highlight all papers by this author (look up from core data)
+    connectedSet = new Set();
+    const authorLower = focusId.toLowerCase();
+    const core = getCore();
+    const corePapers = core?.papers || {};
+    for (const n of nodes) {
+      const cp = corePapers[String(n.id)];
+      const authors = (cp?.a || []).map(a => (a || '').toLowerCase());
+      if (authors.some(a => a.includes(authorLower))) {
+        connectedSet.add(String(n.id));
+      }
+    }
+  } else if (focusId) {
     connectedSet = new Set();
     connectedSet.add(focusId);
     const adj = nodeEdgeIndex[focusId] || [];

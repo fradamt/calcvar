@@ -1297,8 +1297,8 @@ def build_database(min_score, min_year, query_pages, author_pages, per_page):
                             paper, known_researchers, min_year,
                         )
                         has_calcvar = any("mentions_calcvar" in r for r in reasons)
-                        if not has_calcvar and matched_domains == 0:
-                            continue  # skip unrelated papers
+                        if not has_calcvar and matched_domains < 2:
+                            continue  # skip weakly related papers
                         cite_count = external_ref_counts.get(
                             short_openalex_id(work.get("id")), 0
                         )

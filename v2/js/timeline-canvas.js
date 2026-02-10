@@ -241,6 +241,14 @@ function buildPinnedConnections(pinned) {
     connectedPapers.add(pinned.id);
     const adj = indexes?.paperEdgeIndex?.[String(pinned.id)];
     if (adj) adj.forEach(id => connectedPapers.add(id));
+  } else if (pinned.type === 'author') {
+    const authorLower = (pinned.id || '').toLowerCase();
+    for (const [pid, p] of Object.entries(core?.papers || {})) {
+      const authors = (p.a || []).map(a => (a || '').toLowerCase());
+      if (authors.some(a => a.includes(authorLower))) {
+        connectedPapers.add(pid);
+      }
+    }
   }
 
   return { connectedPapers };
@@ -275,6 +283,8 @@ export function init() {
       pinnedConns = null;
       clearPinOverlay();
       filterTimeline();
+    } else {
+      applyPinnedHighlight();
     }
   });
 
@@ -775,6 +785,30 @@ function clearPinOverlay() {
 function buildPinOverlay(pinned, conns) {
   clearPinOverlay();
   const curX = xScale || xScaleOrig;
+
+  // Author pin: label top papers by this author
+  if (pinned.type === 'author') {
+    const authorPapers = [];
+    for (const e of paperEntities) {
+      if (conns.connectedPapers.has(e.data.id)) {
+        authorPapers.push({ x: curX(e.date), y: e.y, r: e.r, title: e.data.t || '', inf: e.inf, date: e.date, isPinned: false });
+      }
+    }
+    authorPapers.sort((a, b) => b.inf - a.inf);
+    const placed = [];
+    const MIN_DIST_SQ = 35 * 35;
+    for (const pl of authorPapers.slice(0, 12)) {
+      const tooClose = placed.some(p => {
+        const dx = pl.x - p.x, dy = pl.y - p.y;
+        return dx * dx + dy * dy < MIN_DIST_SQ;
+      });
+      if (tooClose) continue;
+      placed.push(pl);
+      pinOverlayLabels.push(pl);
+    }
+    needsHudRedraw = true;
+    return;
+  }
 
   let pinnedPos = null;
   if (pinned.type === 'paper') {
