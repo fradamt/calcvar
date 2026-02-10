@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculus of Variations — Research Map</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="modulepreload" href="js/constants.js">
+<link rel="modulepreload" href="js/state.js">
+<link rel="modulepreload" href="js/data.js">
+<link rel="modulepreload" href="js/main.js">
+<link rel="modulepreload" href="js/timeline-canvas.js">
+<link rel="modulepreload" href="js/network.js">
+<link rel="modulepreload" href="js/coauthor.js">
+<link rel="modulepreload" href="js/sidebar.js">
+<link rel="modulepreload" href="js/detail.js">
+<link rel="modulepreload" href="js/search.js">
+<link rel="modulepreload" href="js/canvas-utils.js">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-row header-row-top">
+      <h1><span class="title-long">Calculus of Variations</span><span class="title-short">CalcVar</span></h1>
+      <div class="header-top-main">
+        <div class="content-toggles">
+          <button id="toggle-papers" class="content-toggle papers-toggle active" onclick="toggleContent('papers')" title="Cycle papers: focus &rarr; context &rarr; broad &rarr; off">&#9670; Papers</button>
+        </div>
+        <div class="inf-slider-wrap">
+          <label for="inf-slider" style="font-size:10px;color:#666;white-space:nowrap">Min influence</label>
+          <input type="range" id="inf-slider" min="0" max="100" value="0" step="1">
+          <span id="inf-slider-label" style="font-size:10px;color:#888;min-width:32px">0</span>
+        </div>
+        <div class="controls">
+          <button data-view="timeline" class="active" onclick="showView('timeline')">Timeline</button>
+          <button data-view="network" onclick="showView('network')">Network</button>
+          <button data-view="coauthor" onclick="showView('coauthor')">Authors</button>
+          <button class="help-btn" onclick="toggleHelp()" title="Keyboard shortcuts">?</button>
+        </div>
+      </div>
+    </div>
+    <div class="header-row header-row-bottom">
+      <div id="filter-breadcrumb" class="breadcrumb"></div>
+      <div class="search-wrap header-search-wrap">
+        <input type="text" id="search-box" placeholder="Search papers, authors...">
+        <div class="search-dropdown" id="search-dropdown"></div>
+      </div>
+    </div>
+  </header>
+  <div id="main-area">
+    <div id="timeline-view"></div>
+    <div id="network-view" style="display:none"></div>
+    <div id="coauthor-view" style="display:none"></div>
+    <div id="detail-panel">
+      <button class="close-btn" onclick="closeDetail()">&times;</button>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+  <div id="sidebar">
+    <button id="sidebar-width-toggle" class="sidebar-width-toggle" onclick="toggleSidebarWidth()" title="Expand sidebar">&#9664;</button>
+    <button id="sidebar-hide-toggle" class="sidebar-hide-toggle" onclick="toggleSidebarHidden()" title="Hide sidebar">&#9654;</button>
+    <div class="sidebar-section">
+      <h3>Subfields</h3>
+      <div id="thread-legend" class="thread-legend"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-collapse-hdr" onclick="toggleCollapse('papers')">
+        <span class="toggle-arrow open" id="papers-arrow">&#9662;</span>
+        <h3>Papers</h3>
+      </div>
+      <div class="sidebar-collapse-body open" id="papers-body">
+        <div class="paper-filter-grid">
+          <div class="paper-filter-row">
+            <span class="pf-label">Year</span>
+            <input id="paper-year-min" class="pf-input" type="number" step="1">
+            <span class="pf-sep">&ndash;</span>
+            <input id="paper-year-max" class="pf-input" type="number" step="1">
+          </div>
+          <div class="paper-filter-row">
+            <span class="pf-label">Min citations</span>
+            <input id="paper-min-cites" class="pf-range" type="range" min="0" max="1000" step="1" value="0">
+            <span id="paper-min-cites-label" class="pf-value">0</span>
+          </div>
+          <div class="paper-filter-row">
+            <span class="pf-label">Tag</span>
+            <select id="paper-tag-filter" class="pf-select"></select>
+          </div>
+          <div class="paper-filter-row">
+            <span class="pf-label">Sort</span>
+            <select id="paper-sort-filter" class="pf-select">
+              <option value="influence">Influence</option>
+              <option value="citations">Citations</option>
+              <option value="recent">Recent</option>
+            </select>
+            <button id="paper-filter-reset" class="pf-reset-btn" type="button">Reset</button>
+          </div>
+        </div>
+        <div id="paper-sidebar-summary" class="paper-sidebar-summary"></div>
+        <div id="paper-sidebar-list" class="paper-sidebar-list"></div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Tags</h3>
+      <div id="tag-chips" class="tag-chips"></div>
+    </div>
+    <div class="sidebar-section">
+      <h3 style="display:flex;align-items:center;justify-content:space-between">Top Authors
+        <select id="author-sort" style="font-size:10px;background:#1a1a2e;color:#aaa;border:1px solid #333;border-radius:3px;padding:1px 4px;cursor:pointer">
+          <option value="inf">Influence</option>
+          <option value="pc">Papers</option>
+          <option value="cc">Citations</option>
+        </select>
+      </h3>
+      <div id="author-list"></div>
+    </div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
+<div id="help-overlay" class="help-overlay" onclick="toggleHelp()">
+  <div class="help-card" onclick="event.stopPropagation()">
+    <h3>Keyboard Shortcuts &amp; Interactions</h3>
+    <div class="help-grid">
+      <div class="help-key">Click node</div><div class="help-desc">Pin/focus node and highlight links</div>
+      <div class="help-key">Double-click node</div><div class="help-desc">Open detail sidebar for that node</div>
+      <div class="help-key">Click subfield/author</div><div class="help-desc">Filter by subfield or author</div>
+      <div class="help-key">Double-click subfield/author</div><div class="help-desc">Filter &amp; open detail sidebar</div>
+      <div class="help-key">Shift+Click</div><div class="help-desc">Find citation path from pinned to clicked paper</div>
+      <div class="help-key">&larr; &rarr;</div><div class="help-desc">Navigate between connected papers</div>
+      <div class="help-key">Scroll / Trackpad</div><div class="help-desc">Zoom timeline</div>
+      <div class="help-key">Drag timeline</div><div class="help-desc">Pan horizontally</div>
+      <div class="help-key">Double-click</div><div class="help-desc">Reset zoom</div>
+      <div class="help-key">Esc</div><div class="help-desc">Clear all filters &amp; close panels</div>
+      <div class="help-key">? or 1/2/3</div><div class="help-desc">Help / Switch views</div>
+    </div>
+    <p style="margin-top:12px;color:#888;font-size:11px">
+      Click subfield chips for subfield details. Use search to find papers by title or author.
+      Trace Lineage shows the citation tree (2 hops up and down) from any paper.
+    </p>
+  </div>
+</div>
+
+<script>
+  // Sidebar collapse toggle (global, used by inline onclick)
+  window.toggleCollapse = function(id) {
+    var body = document.getElementById(id + '-body');
+    var arrow = document.getElementById(id + '-arrow');
+    if (body) body.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open');
+  };
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
