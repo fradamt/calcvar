@@ -2,7 +2,7 @@
 
 import { THREAD_COLORS, THREAD_ORDER, THREAD_NAMES, AUTHOR_COLORS } from './constants.js';
 import {
-  getState, on, setFilters, selectEntity, setContentToggle,
+  getState, on, setFilters, selectEntity, pinEntity, setContentToggle,
 } from './state.js';
 import { getCore, loadPapers, getPapers } from './data.js';
 
@@ -440,7 +440,16 @@ function renderPaperSidebarList() {
   }).join('');
 
   for (const el of listEl.querySelectorAll('.paper-sidebar-item')) {
+    let clickTimer = null;
     el.addEventListener('click', () => {
+      const pid = el.getAttribute('data-paper-id') || '';
+      if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        pinEntity({ type: 'paper', id: pid });
+      }, 250);
+    });
+    el.addEventListener('dblclick', () => {
       const pid = el.getAttribute('data-paper-id') || '';
       selectEntity({ type: 'paper', id: pid });
     });
