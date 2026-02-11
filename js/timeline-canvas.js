@@ -242,21 +242,31 @@ function buildPinnedConnections(pinned) {
     const adj = indexes?.paperEdgeIndex?.[String(pinned.id)];
     if (adj) adj.forEach(id => connectedPapers.add(id));
   } else if (pinned.type === 'author') {
+    // Find the author's own papers in core
+    const authorPapers = new Set();
     const authorLower = (pinned.id || '').toLowerCase();
     for (const [pid, p] of Object.entries(core?.papers || {})) {
       const authors = (p.a || []).map(a => (a || '').toLowerCase());
       if (authors.some(a => a.includes(authorLower))) {
-        connectedPapers.add(pid);
+        authorPapers.add(pid);
       }
     }
-    // Also include papers from the author's tops list
     const authorData = core?.authors?.[pinned.id];
     if (authorData?.tops) {
-      for (const pid of authorData.tops) connectedPapers.add(pid);
+      for (const pid of authorData.tops) {
+        if (core?.papers?.[pid]) authorPapers.add(pid);
+      }
     }
+    // Add author's papers plus their first-degree citation neighbors
+    for (const pid of authorPapers) {
+      connectedPapers.add(pid);
+      const adj = indexes?.paperEdgeIndex?.[pid];
+      if (adj) adj.forEach(id => connectedPapers.add(id));
+    }
+    return { connectedPapers, authorPapers };
   }
 
-  return { connectedPapers };
+  return { connectedPapers, authorPapers: null };
 }
 
 // --- Init ---
@@ -762,14 +772,17 @@ function applyPinnedHighlight() {
 
   for (const e of paperEntities) {
     const isPinned = pinned.type === 'paper' && e.data.id === pinned.id;
+    const isAuthorPaper = conns.authorPapers?.has(e.data.id);
     const isConnected = conns.connectedPapers.has(e.data.id);
-    e.opacity = isPinned ? 0.9 : isConnected ? 0.7 : 0.05;
+    e.opacity = isPinned ? 0.9 : isAuthorPaper ? 0.85 : isConnected ? 0.5 : 0.05;
     e.targetOpacity = e.opacity;
   }
 
   for (const edge of edgeData) {
-    const direct = (pinned.type === 'paper') && (edge.source === pinned.id || edge.target === pinned.id);
-    edge.opacity = direct ? 0.5 : 0;
+    const directPaper = (pinned.type === 'paper') && (edge.source === pinned.id || edge.target === pinned.id);
+    const directAuthor = conns.authorPapers && (conns.authorPapers.has(edge.source) || conns.authorPapers.has(edge.target));
+    const direct = directPaper || directAuthor;
+    edge.opacity = direct ? 0.4 : 0;
     edge.highlighted = direct;
   }
 
