@@ -974,10 +974,10 @@ def merge_paper_rows(existing, incoming):
     if not existing.get("venue") and both_venues:
         existing["venue"] = both_venues[0]
 
-    # Prefer the later year (published version) and update the canonical ID
+    # Prefer the earlier year (first version / preprint) and update the canonical ID
     # to use the published DOI.
     if both_years:
-        existing["year"] = max(both_years)
+        existing["year"] = min(both_years)
     new_doi = existing.get("doi")
     new_arxiv = existing.get("arxiv_id")
     new_oa = existing.get("openalex_id")
