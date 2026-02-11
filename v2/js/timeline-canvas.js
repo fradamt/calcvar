@@ -797,9 +797,15 @@ function applyPinnedHighlight() {
   }
 
   for (const edge of edgeData) {
-    const direct = (pinned.type === 'paper') && (edge.source === pinned.id || edge.target === pinned.id);
+    // source cites target, so:
+    //   edge.source === pinned.id means pinned paper cites edge.target (outgoing reference)
+    //   edge.target === pinned.id means edge.source cites pinned paper (incoming citation)
+    const isOutgoing = (pinned.type === 'paper') && edge.source === pinned.id;
+    const isIncoming = (pinned.type === 'paper') && edge.target === pinned.id;
+    const direct = isOutgoing || isIncoming;
     edge.opacity = direct ? 0.5 : 0;
     edge.highlighted = direct;
+    edge.direction = isOutgoing ? 'out' : isIncoming ? 'in' : null;
   }
 
   buildPinOverlay(pinned, conns);
@@ -965,9 +971,11 @@ function drawBase() {
     if (edge.opacity < 0.005) continue;
     const x1 = curX(edge.sd);
     const x2 = curX(edge.td);
-    ctx.strokeStyle = edge.highlighted
-      ? hexWithAlpha('#88aaff', edge.opacity)
-      : hexWithAlpha('#556', edge.opacity);
+    // Outgoing refs (pinned cites target) = blue, incoming citations (source cites pinned) = orange
+    const edgeColor = edge.direction === 'out' ? '#6699dd'
+      : edge.direction === 'in' ? '#dd9944'
+      : edge.highlighted ? '#88aaff' : '#556';
+    ctx.strokeStyle = hexWithAlpha(edgeColor, edge.opacity);
     ctx.lineWidth = edge.highlighted ? 1.5 : 0.5;
     ctx.beginPath();
     ctx.moveTo(x1, edge.sy);
@@ -975,7 +983,7 @@ function drawBase() {
     ctx.stroke();
 
     if (edge.highlighted) {
-      drawArrow(ctx, x1, edge.sy, x2, edge.ty, 5, hexWithAlpha('#88aaff', edge.opacity));
+      drawArrow(ctx, x1, edge.sy, x2, edge.ty, 5, hexWithAlpha(edgeColor, edge.opacity));
     }
   }
 
