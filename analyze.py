@@ -420,7 +420,7 @@ def main():
     papers_dict = {}
     for p in papers:
         pid = p["id"]
-        papers_dict[pid] = {
+        entry = {
             "id": pid,
             "t": p.get("title", ""),
             "a": (p.get("authors") or [])[:10],
@@ -435,6 +435,10 @@ def main():
             "url": p.get("url"),
             "venue": p.get("venue"),
         }
+        refs = in_corpus_refs.get(pid, [])
+        if refs:
+            entry["ref"] = refs
+        papers_dict[pid] = entry
 
     papers_data = {
         "metadata": {
