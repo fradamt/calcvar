@@ -3,7 +3,7 @@
 
 import { THREAD_COLORS, THREAD_ORDER, THREAD_NAMES, TIMELINE_ZOOM_EXTENT } from './constants.js';
 import { getState, on, selectEntity, pinEntity, hoverEntity, setFilters } from './state.js';
-import { getCore, getCoreIndexes, loadPapers, getPapers } from './data.js';
+import { getCore, loadPapers, getPapers } from './data.js';
 import { setupCanvas, drawDiamond, drawArrow, hexWithAlpha } from './canvas-utils.js';
 
 // --- Module state ---
@@ -50,6 +50,7 @@ let edgeData = [];         // { source, target, sd, td, sy, ty, opacity }
 // Hit-testing: per-lane sorted arrays
 let laneBuckets = [];
 let entityById = {};
+let localEdgeIndex = {};  // pid -> Set of connected pids (from all edges, not just core)
 
 // Hover/pin state
 let hoveredIdx = -1;
@@ -235,11 +236,10 @@ function hitTestPaper(sx, sy) {
 function buildPinnedConnections(pinned) {
   const connectedPapers = new Set();
   const core = getCore();
-  const indexes = getCoreIndexes();
 
   if (pinned.type === 'paper') {
     connectedPapers.add(pinned.id);
-    const adj = indexes?.paperEdgeIndex?.[String(pinned.id)];
+    const adj = localEdgeIndex[String(pinned.id)];
     if (adj) adj.forEach(id => connectedPapers.add(id));
   } else if (pinned.type === 'author') {
     const authorLower = (pinned.id || '').toLowerCase();
@@ -469,23 +469,32 @@ function buildTimeline(core) {
 
   buildLaneBuckets();
 
-  // --- Build edge data ---
+  // --- Build edge data from all papers' ref lists ---
   edgeData = [];
-  const graphEdges = core.graph?.edges || [];
-  for (const e of graphEdges) {
-    const sP = paperMap[e.source];
-    const tP = paperMap[e.target];
-    if (sP && tP && sP._yPos !== undefined && tP._yPos !== undefined) {
+  localEdgeIndex = {};
+  const edgeSeen = new Set();
+  for (const p of Object.values(paperMap)) {
+    if (!p.ref || p._yPos === undefined) continue;
+    for (const targetId of p.ref) {
+      const tP = paperMap[targetId];
+      if (!tP || tP._yPos === undefined) continue;
+      const key = p.id + '>' + targetId;
+      if (edgeSeen.has(key)) continue;
+      edgeSeen.add(key);
       edgeData.push({
-        source: e.source,
-        target: e.target,
-        sd: sP._date,
+        source: p.id,
+        target: targetId,
+        sd: p._date,
         td: tP._date,
-        sy: sP._yPos,
+        sy: p._yPos,
         ty: tP._yPos,
         opacity: 0.06,
         highlighted: false,
       });
+      if (!localEdgeIndex[p.id]) localEdgeIndex[p.id] = new Set();
+      if (!localEdgeIndex[targetId]) localEdgeIndex[targetId] = new Set();
+      localEdgeIndex[p.id].add(targetId);
+      localEdgeIndex[targetId].add(p.id);
     }
   }
 
