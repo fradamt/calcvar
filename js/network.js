@@ -424,6 +424,11 @@ function draw() {
         connectedSet.add(String(n.id));
       }
     }
+    // Also include papers from the author's tops list
+    const authorData = core?.authors?.[focusId];
+    if (authorData?.tops) {
+      for (const pid of authorData.tops) connectedSet.add(pid);
+    }
   } else if (focusId) {
     connectedSet = new Set();
     connectedSet.add(focusId);

@@ -1,7 +1,7 @@
 // detail.js — Right panel: paper/author/thread detail
 
 import { THREAD_COLORS, THREAD_NAMES, AUTHOR_COLORS } from './constants.js';
-import { getState, on, selectEntity, pinEntity, setFilters, setDetailOpen, setLineage } from './state.js';
+import { getState, on, selectEntity, pinEntity, togglePin, setFilters, setDetailOpen, setLineage } from './state.js';
 import { getCore, getCoreIndexes, getPapers, loadPapers } from './data.js';
 
 export function init() {
@@ -169,7 +169,7 @@ function showAuthorDetail(el, id) {
   // Action buttons
   const st = getState();
   const isPinned = st.pinnedEntity?.type === 'author' && st.pinnedEntity?.id === id;
-  const isFiltered = st.filters?.activeAuthor === id;
+  const isFiltered = st.activeAuthor === id;
   html += `<div style="margin:10px 0 6px;display:flex;gap:6px">`;
   html += `<button class="action-btn" id="author-pin-btn" style="border-color:${isPinned ? '#88aaff' : '#5566aa'};color:${isPinned ? '#88aaff' : '#8899cc'}">${isPinned ? 'Unpin' : 'Pin in Graph'}</button>`;
   html += `<button class="action-btn" id="author-filter-btn" style="border-color:${isFiltered ? '#aa8844' : '#44aa88'};color:${isFiltered ? '#ccaa66' : '#66bbaa'}">${isFiltered ? 'Clear Filter' : 'Filter Papers'}</button>`;
@@ -215,7 +215,11 @@ function showAuthorDetail(el, id) {
 
   // If some top papers weren't in core, load the full papers dataset and re-render them
   if (missingFromCore) {
+    const authorId = id;
     loadPapers().then(() => {
+      // Guard: bail if user navigated to a different entity
+      const cur = getState().selectedEntity;
+      if (cur?.type !== 'author' || cur?.id !== authorId) return;
       const allPapers = getPapers()?.papers;
       if (!allPapers) return;
       const container = el.querySelector('#author-top-papers');
@@ -245,17 +249,22 @@ function wireUpAuthorActions(container, authorId) {
   const pinBtn = container.querySelector('#author-pin-btn');
   if (pinBtn) {
     pinBtn.addEventListener('click', () => {
-      const st = getState();
-      const isPinned = st.pinnedEntity?.type === 'author' && st.pinnedEntity?.id === authorId;
-      pinEntity(isPinned ? null : { type: 'author', id: authorId });
+      // togglePin keeps detail panel open (unlike pinEntity which closes it)
+      togglePin({ type: 'author', id: authorId });
+      const nowPinned = getState().pinnedEntity?.type === 'author' && getState().pinnedEntity?.id === authorId;
+      pinBtn.textContent = nowPinned ? 'Unpin' : 'Pin in Graph';
+      pinBtn.style.borderColor = nowPinned ? '#88aaff' : '#5566aa';
+      pinBtn.style.color = nowPinned ? '#88aaff' : '#8899cc';
     });
   }
   const filterBtn = container.querySelector('#author-filter-btn');
   if (filterBtn) {
     filterBtn.addEventListener('click', () => {
-      const st = getState();
-      const isFiltered = st.filters?.activeAuthor === authorId;
+      const isFiltered = getState().activeAuthor === authorId;
       setFilters({ activeAuthor: isFiltered ? null : authorId });
+      filterBtn.textContent = isFiltered ? 'Filter Papers' : 'Clear Filter';
+      filterBtn.style.borderColor = isFiltered ? '#44aa88' : '#aa8844';
+      filterBtn.style.color = isFiltered ? '#66bbaa' : '#ccaa66';
     });
   }
 }

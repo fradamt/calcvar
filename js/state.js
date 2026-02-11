@@ -72,6 +72,14 @@ export function pinEntity(entity) {
   emit('pin:changed', { prev, current: entity });
 }
 
+export function togglePin(entity) {
+  const prev = state.pinnedEntity;
+  const same = prev?.type === entity?.type && prev?.id === entity?.id;
+  state.pinnedEntity = same ? null : entity;
+  state.pinnedPaperId = (!same && entity?.type === 'paper') ? entity.id : null;
+  emit('pin:changed', { prev, current: state.pinnedEntity });
+}
+
 export function selectEntity(entity) {
   const prev = state.selectedEntity;
   state.selectedEntity = entity;
