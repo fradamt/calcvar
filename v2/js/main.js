@@ -267,6 +267,9 @@ async function init() {
   detailModule.init();
   searchModule.init(core);
 
+  // Load full papers dataset before timeline so all papers are shown
+  await loadPapers();
+
   // Init default view (timeline)
   timelineModule = await import('./timeline-canvas.js');
   timelineModule.init();

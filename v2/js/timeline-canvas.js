@@ -3,7 +3,7 @@
 
 import { THREAD_COLORS, THREAD_ORDER, THREAD_NAMES, TIMELINE_ZOOM_EXTENT } from './constants.js';
 import { getState, on, selectEntity, pinEntity, hoverEntity, setFilters } from './state.js';
-import { getCore, getCoreIndexes } from './data.js';
+import { getCore, getCoreIndexes, loadPapers, getPapers } from './data.js';
 import { setupCanvas, drawDiamond, drawArrow, hexWithAlpha } from './canvas-utils.js';
 
 // --- Module state ---
@@ -242,31 +242,20 @@ function buildPinnedConnections(pinned) {
     const adj = indexes?.paperEdgeIndex?.[String(pinned.id)];
     if (adj) adj.forEach(id => connectedPapers.add(id));
   } else if (pinned.type === 'author') {
-    // Find the author's own papers in core
-    const authorPapers = new Set();
     const authorLower = (pinned.id || '').toLowerCase();
-    for (const [pid, p] of Object.entries(core?.papers || {})) {
+    for (const [pid, p] of Object.entries(paperMap)) {
       const authors = (p.a || []).map(a => (a || '').toLowerCase());
       if (authors.some(a => a.includes(authorLower))) {
-        authorPapers.add(pid);
+        connectedPapers.add(pid);
       }
     }
     const authorData = core?.authors?.[pinned.id];
     if (authorData?.tops) {
-      for (const pid of authorData.tops) {
-        if (core?.papers?.[pid]) authorPapers.add(pid);
-      }
+      for (const pid of authorData.tops) connectedPapers.add(pid);
     }
-    // Add author's papers plus their first-degree citation neighbors
-    for (const pid of authorPapers) {
-      connectedPapers.add(pid);
-      const adj = indexes?.paperEdgeIndex?.[pid];
-      if (adj) adj.forEach(id => connectedPapers.add(id));
-    }
-    return { connectedPapers, authorPapers };
   }
 
-  return { connectedPapers, authorPapers: null };
+  return { connectedPapers };
 }
 
 // --- Init ---
@@ -281,7 +270,17 @@ export function init() {
   const core = getCore();
   if (!core) return;
 
-  paperMap = core.papers || {};
+  // Merge core papers (rich data) with full papers dataset
+  paperMap = Object.assign({}, core.papers || {});
+  const allPapers = getPapers()?.papers;
+  if (allPapers) {
+    for (const [pid, p] of Object.entries(allPapers)) {
+      if (!paperMap[pid]) {
+        // Synthesize date string from year for non-core papers
+        paperMap[pid] = Object.assign({}, p, { d: p.d || (p.y ? p.y + '-01-01' : null) });
+      }
+    }
+  }
 
   buildTimeline(core);
 
@@ -337,6 +336,17 @@ function rebuildTimeline() {
   labelSet = new Set();
   tweens = [];
   zoomTransform = d3.zoomIdentity;
+
+  // Rebuild paperMap with full dataset
+  paperMap = Object.assign({}, core.papers || {});
+  const allPapers = getPapers()?.papers;
+  if (allPapers) {
+    for (const [pid, p] of Object.entries(allPapers)) {
+      if (!paperMap[pid]) {
+        paperMap[pid] = Object.assign({}, p, { d: p.d || (p.y ? p.y + '-01-01' : null) });
+      }
+    }
+  }
 
   buildTimeline(core);
   filterTimeline();
@@ -772,17 +782,14 @@ function applyPinnedHighlight() {
 
   for (const e of paperEntities) {
     const isPinned = pinned.type === 'paper' && e.data.id === pinned.id;
-    const isAuthorPaper = conns.authorPapers?.has(e.data.id);
     const isConnected = conns.connectedPapers.has(e.data.id);
-    e.opacity = isPinned ? 0.9 : isAuthorPaper ? 0.85 : isConnected ? 0.5 : 0.05;
+    e.opacity = isPinned ? 0.9 : isConnected ? 0.7 : 0.05;
     e.targetOpacity = e.opacity;
   }
 
   for (const edge of edgeData) {
-    const directPaper = (pinned.type === 'paper') && (edge.source === pinned.id || edge.target === pinned.id);
-    const directAuthor = conns.authorPapers && (conns.authorPapers.has(edge.source) || conns.authorPapers.has(edge.target));
-    const direct = directPaper || directAuthor;
-    edge.opacity = direct ? 0.4 : 0;
+    const direct = (pinned.type === 'paper') && (edge.source === pinned.id || edge.target === pinned.id);
+    edge.opacity = direct ? 0.5 : 0;
     edge.highlighted = direct;
   }
 
