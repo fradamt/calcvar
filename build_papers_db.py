@@ -153,6 +153,7 @@ AUTHOR_SEEDS = [
     "Roberto Alicandro",
     "Marco Cicalese",
     "Matteo Focardi",
+    "Anastasija Pešić",
     # Optimal Transport
     "Giuseppe Savaré",
     "Nicola Gigli",
