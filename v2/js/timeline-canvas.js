@@ -249,6 +249,11 @@ function buildPinnedConnections(pinned) {
         connectedPapers.add(pid);
       }
     }
+    // Also include papers from the author's tops list
+    const authorData = core?.authors?.[pinned.id];
+    if (authorData?.tops) {
+      for (const pid of authorData.tops) connectedPapers.add(pid);
+    }
   }
 
   return { connectedPapers };
