@@ -1,7 +1,7 @@
 // detail.js — Right panel: paper/author/thread detail
 
 import { THREAD_COLORS, THREAD_NAMES, AUTHOR_COLORS } from './constants.js';
-import { getState, on, selectEntity, setFilters, setDetailOpen, setLineage } from './state.js';
+import { getState, on, selectEntity, pinEntity, setFilters, setDetailOpen, setLineage } from './state.js';
 import { getCore, getCoreIndexes, getPapers, loadPapers } from './data.js';
 
 export function init() {
@@ -166,6 +166,15 @@ function showAuthorDetail(el, id) {
     html += `<div class="detail-stat"><span class="label">Active Years</span><span class="value">${a.yrs[0]}\u2013${a.yrs[a.yrs.length - 1]}</span></div>`;
   }
 
+  // Action buttons
+  const st = getState();
+  const isPinned = st.pinnedEntity?.type === 'author' && st.pinnedEntity?.id === id;
+  const isFiltered = st.filters?.activeAuthor === id;
+  html += `<div style="margin:10px 0 6px;display:flex;gap:6px">`;
+  html += `<button class="action-btn" id="author-pin-btn" style="border-color:${isPinned ? '#88aaff' : '#5566aa'};color:${isPinned ? '#88aaff' : '#8899cc'}">${isPinned ? 'Unpin' : 'Pin in Graph'}</button>`;
+  html += `<button class="action-btn" id="author-filter-btn" style="border-color:${isFiltered ? '#aa8844' : '#44aa88'};color:${isFiltered ? '#ccaa66' : '#66bbaa'}">${isFiltered ? 'Clear Filter' : 'Filter Papers'}</button>`;
+  html += `</div>`;
+
   // Thread distribution bars
   if (a.ths && Object.keys(a.ths).length > 0) {
     html += `<div style="margin-top:12px"><strong style="font-size:11px;color:#888">Subfield Distribution</strong><div style="margin-top:6px">`;
@@ -183,18 +192,10 @@ function showAuthorDetail(el, id) {
     html += `</div></div>`;
   }
 
-  // Top papers
-  if (a.tops?.length > 0) {
-    html += `<div class="detail-refs" style="margin-top:12px"><h4>Top Papers</h4>`;
-    for (const pid of a.tops) {
-      const paper = core.papers?.[pid];
-      if (paper) {
-        const yearStr = paper.d ? paper.d.slice(0, 4) : '';
-        html += `<div class="ref-item"><a data-paper="${h(pid)}">${h(paper.t)}</a> <span style="color:#666;font-size:10px">(${yearStr}${yearStr ? ', ' : ''}inf ${(paper.inf || 0).toFixed(2)})</span></div>`;
-      }
-    }
-    html += `</div>`;
-  }
+  // Top papers — check which are missing from core
+  const missingFromCore = (a.tops || []).some(pid => !core.papers?.[pid]);
+
+  html += buildTopPapersHTML(a.tops, core.papers, null);
 
   // Co-researchers
   if (a.co && Object.keys(a.co).length > 0) {
@@ -210,6 +211,53 @@ function showAuthorDetail(el, id) {
 
   el.innerHTML = html;
   wireUpDetailLinks(el);
+  wireUpAuthorActions(el, id);
+
+  // If some top papers weren't in core, load the full papers dataset and re-render them
+  if (missingFromCore) {
+    loadPapers().then(() => {
+      const allPapers = getPapers()?.papers;
+      if (!allPapers) return;
+      const container = el.querySelector('#author-top-papers');
+      if (container) {
+        container.innerHTML = buildTopPapersHTML(a.tops, core.papers, allPapers);
+        wireUpDetailLinks(container);
+      }
+    });
+  }
+}
+
+function buildTopPapersHTML(tops, corePapers, allPapers) {
+  if (!tops?.length) return '';
+  let html = `<div id="author-top-papers"><div class="detail-refs" style="margin-top:12px"><h4>Top Papers</h4>`;
+  for (const pid of tops) {
+    const paper = corePapers?.[pid] || allPapers?.[pid];
+    if (paper) {
+      const yearStr = paper.d ? paper.d.slice(0, 4) : (paper.y ? String(paper.y) : '');
+      html += `<div class="ref-item"><a data-paper="${h(pid)}">${h(paper.t)}</a> <span style="color:#666;font-size:10px">(${yearStr}${yearStr ? ', ' : ''}inf ${(paper.inf || 0).toFixed(2)})</span></div>`;
+    }
+  }
+  html += `</div></div>`;
+  return html;
+}
+
+function wireUpAuthorActions(container, authorId) {
+  const pinBtn = container.querySelector('#author-pin-btn');
+  if (pinBtn) {
+    pinBtn.addEventListener('click', () => {
+      const st = getState();
+      const isPinned = st.pinnedEntity?.type === 'author' && st.pinnedEntity?.id === authorId;
+      pinEntity(isPinned ? null : { type: 'author', id: authorId });
+    });
+  }
+  const filterBtn = container.querySelector('#author-filter-btn');
+  if (filterBtn) {
+    filterBtn.addEventListener('click', () => {
+      const st = getState();
+      const isFiltered = st.filters?.activeAuthor === authorId;
+      setFilters({ activeAuthor: isFiltered ? null : authorId });
+    });
+  }
 }
 
 // --- THREAD DETAIL ---
