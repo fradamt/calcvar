@@ -150,6 +150,20 @@ When an author is pinned/selected (from search or sidebar), all their papers are
 
 When a paper is pinned, only **first-degree edges** (direct citations to/from the pinned paper) are shown. All other edges are fully hidden (opacity 0) to avoid visual clutter from dense second-degree connections.
 
+## Workflow
+
+After any changes (code or data), always commit, push to `main`, and update the live site:
+
+```bash
+git add <files> && git commit -m "..."
+git push origin main
+git branch -D gh-pages 2>/dev/null
+git subtree split --prefix v2 -b gh-pages
+git push -f origin gh-pages
+```
+
+Do not wait for the user to ask — commit + push + update Pages is the default.
+
 ## Key Design Decisions
 
 - **Canvas over SVG:** Performance with thousands of papers. All three views use HTML5 Canvas.
